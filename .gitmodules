@@ -1,0 +1,3 @@
+[submodule "src/veins/modules/application/platooning"]
+	path = src/veins/modules/application/platooning
+	url = git@gitlab.ibr.cs.tu-bs.de:willecke/plexe-veins-application.git
