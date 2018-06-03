@@ -103,7 +103,38 @@ class TraCIScenarioManager : public cSimpleModule
 			return hosts;
 		}
 
+   		bool isTraciInitialized() {
+			return traciInitialized;
+		}
+
+		simtime_t getUpdateInterval() {
+			return updateInterval;
+		}
+
+
+        /**
+         * convert TraCI coordinates to OMNeT++ coordinates
+         */
+        Coord traci2omnet(TraCICoord coord) const {
+            return connection->traci2omnet(coord);
+        }
+        std::list<Coord> traci2omnet(const std::list<TraCICoord>& coords) const {
+            return connection->traci2omnet(coords);
+        }
+
+        /**
+         * convert OMNeT++ coordinates to TraCI coordinates
+         */
+        TraCICoord omnet2traci(Coord coord) const {
+            return connection->omnet2traci(coord);
+        }
+        std::list<TraCICoord> omnet2traci(const std::list<Coord>& coords) const {
+            return connection->omnet2traci(coords);
+        }
+
+
 	protected:
+        bool traciInitialized;
 		bool debug; /**< whether to emit debug messages */
 		simtime_t connectAt; /**< when to connect to TraCI server (must be the initial timestep of the server) */
 		simtime_t firstStepAt; /**< when to start synchronizing with the TraCI server (-1: immediately after connecting) */

@@ -18,6 +18,13 @@ class TraCICommandInterface
 	public:
 		TraCICommandInterface(TraCIConnection&);
 
+        enum DepartDefs {
+            DEPART_NOW = 2,
+            DEPART_LANE_BEST_FREE = 5,
+            DEPART_POS_BASE = 4,
+            //DEPART_SPEED_MAX = 3
+        };
+
 		enum DepartTime {
 			DEPART_TIME_TRIGGERED = -1,
 			DEPART_TIME_CONTAINER_TRIGGERED = -2,
@@ -44,6 +51,16 @@ class TraCICommandInterface
 			DEPART_LANE_BEST = -5, // The least occupied of the best lanes
 			DEPART_LANE_FIRST = -6, // The rightmost valid 
 		};
+
+        /**
+         * @brief struct used as header for generic data passing to this model through
+         * traci
+         */
+        struct CCDataHeader {
+            int type;    //type of message. indicates what comes after the header
+            int size;    //size of message. indicates how many bytes comes after the header
+        };
+
 
 		// General methods that do not deal with a particular object in the simulation
 		std::pair<uint32_t, std::string> getVersion();
@@ -90,7 +107,153 @@ class TraCICommandInterface
 				int32_t getLaneIndex();
 				std::string getTypeId();
 				bool changeVehicleRoute(const std::list<std::string>& roads);
-				double getLength();
+                double getLength();
+				/**
+				 * Gets the total number of lanes on the edge the vehicle is currently traveling
+				 */
+				unsigned int getLanesCount();
+				/**
+				 * Sets the data about the leader of the platoon. This data is usually received
+				 * by means of wireless communications
+				 */
+				void setPlatoonLeaderData(double leaderSpeed, double leaderAcceleration, double positionX, double positionY, double time);
+				/**
+				 * Sets the data about the preceding vehicle in the platoon. This data is usually
+				 * received by means of wireless communications
+				 */
+				void setPrecedingVehicleData(double speed, double acceleration, double positionX, double positionY, double time);
+				/**
+				 * Gets the data about a vehicle. This can be used by a platoon leader in order to query for the acceleration
+				 * before sending the data to the followers
+				 */
+				void getVehicleData(double &speed, double &acceleration, double &controllerAcceleration, double &positionX, double &positionY, double &time);
+
+				void setGenericInformation(int type, const void* data, int length);
+				void getGenericInformation(int type, const void* params, int paramsLength, void *result);
+
+				/**
+				 * Set the cruise control desired speed
+				 */
+				void setCruiseControlDesiredSpeed(double desiredSpeed);
+				/**
+				 * Set the currently active controller, which can be either the driver, the ACC or
+				 * the CACC. CC is not mentioned because CC and ACC work together
+				 *
+				 * @param vehicleId the id of vehicle for which the active controller must be set
+				 * @param activeController the controller to be activated: 0 for driver, 1 for
+				 * ACC and 2 for CACC
+				 */
+				void setActiveController(int activeController);
+
+				/**
+				 * Returns the currently active controller
+				 */
+				int getActiveController();
+				/**
+				 * Set CACC constant spacing
+				 *
+				 * @param vehicleId the id of vehicle for which the constant spacing must be set
+				 * @param spacing the constant spacing in meter
+				 */
+				void setCACCConstantSpacing(double spacing);
+
+				/**
+				 * Returns the CACC constant spacing
+				 */
+				double getCACCConstantSpacing();
+
+				/**
+				 * Sets the headway time for the ACC
+				 *
+				 * @param vehicleId the id of the vehicle
+				 * @param headway the headway time in seconds
+				 */
+				void setACCHeadwayTime(double headway);
+
+				/**
+				 * Enables/disables a fixed acceleration
+				 *
+				 * @param vehicleId the id of the vehicle
+				 * @param activate activate (1) or deactivate (0) the usage of a fixed acceleration
+				 * @param acceleration the fixed acceleration to be used if activate == 1
+				 */
+				void setFixedAcceleration(int activate, double acceleration);
+
+				/**
+				 * Returns whether a vehicle has crashed or not
+				 *
+				 * @param vehicleId the id of the vehicle
+				 * @return true if the vehicle has crashed, false otherwise
+				 */
+				bool isCrashed();
+
+				/**
+				 * Tells whether the car has an ACC/CACC controller installed or not. Basically
+				 * it checks the the mobility model which is driving the car
+				 *
+				 */
+				bool isCruiseControllerInstalled();
+				/**
+				 * Tells to the CC mobility model the desired lane change action to be performed
+				 *
+				 * @param vehicleId the vehicle id to communicate the action to
+				 * @param action the action to be performed. this can be either:
+				 * 0 = driver choice: the application protocol wants to let the driver chose the lane
+				 * 1 = management lane: the application protocol wants the driver to move the car
+				 * to the management lane, i.e., the leftmost minus one
+				 * 2 = platooning lane: the application protocol wants the driver to move the car
+				 * to the platooning lane, i.e., the leftmost
+				 * 3 = stay there: the application protocol wants the driver to keep the car
+				 * into the platooning lane because the car is a part of a platoon
+				 */
+				void setLaneChangeAction(int action);
+
+				/**
+				 * Returns the currently set lane change action
+				 */
+				int getLaneChangeAction();
+
+				/**
+				 * Set a fixed lane a car should move to
+				 *
+				 * @param laneIndex lane to move to, where 0 indicates the rightmost
+				 */
+				void setFixedLane(int laneIndex);
+
+				/**
+				 * Gets the data measured by the radar, i.e., distance and relative speed.
+				 * This is basically what SUMO measures, so it gives back potentially
+				 * infinite distance measurements. Taking into account that the maximum
+				 * distance measurable of the Bosch LRR3 radar is 250m, when this
+				 * method returns a distance value greater than 250m, it shall be
+				 * interpreted like "there is nobody in front"
+				 */
+				void getRadarMeasurements(double &distance, double &relativeSpeed);
+
+				void setControllerFakeData(double frontDistance, double frontSpeed, double frontAcceleration,
+				                    double leaderSpeed, double leaderAcceleration);
+
+				/**
+				 * Gets the distance that a vehicle has to travel to reach the end of
+				 * its route. Might be really useful for deciding when a car has to
+				 * leave a platoon
+				 */
+				double getDistanceToRouteEnd();
+
+				/**
+				 * Gets the distance that a vehicle has traveled since the begin
+				 */
+				double getDistanceFromRouteBegin();
+
+				/**
+				 * Gets acceleration that the ACC has computed while the vehicle
+				 * is controlled by the faked CACC
+				 */
+				double getACCAcceleration();
+				/**
+				 * Returns the vehicle type of a vehicle
+				 */
+				std::string getVType();
 
 			protected:
 				TraCICommandInterface* traci;
@@ -102,6 +265,7 @@ class TraCICommandInterface
 		}
 
 		// Road methods
+        std::list<std::string> getRoadIds();
 		class Road {
 			public:
 				Road(TraCICommandInterface* traci, std::string roadId) : traci(traci), roadId(roadId) {

@@ -53,19 +53,31 @@ class TraCIBuffer {
 			}
 		}
 
-		void readBuffer(unsigned char *buffer, size_t size) {
-			if (isBigEndian()) {
-				for (size_t i=0; i<size; ++i) {
-					if (eof()) throw cRuntimeError("Attempted to read past end of byte buffer");
-					buffer[i] = buf[buf_index++];
-				}
-			} else {
-				for (size_t i=0; i<size; ++i) {
-					if (eof()) throw cRuntimeError("Attempted to read past end of byte buffer");
-					buffer[size-1-i] = buf[buf_index++];
-				}
-			}
-		}
+        void writeBuffer(const unsigned char *buffer, size_t size) {
+            if (isBigEndian()) {
+                for (size_t i=0; i<size; ++i) {
+                    buf += buffer[i];
+                }
+            } else {
+                for (size_t i=0; i<size; ++i) {
+                    buf += buffer[size-1-i];
+                }
+            }
+        }
+
+        void readBuffer(unsigned char *buffer, size_t size) {
+            if (isBigEndian()) {
+                for (size_t i=0; i<size; ++i) {
+                    if (eof()) throw cRuntimeError("Attempted to read past end of byte buffer");
+                    buffer[i] = buf[buf_index++];
+                }
+            } else {
+                for (size_t i=0; i<size; ++i) {
+                    if (eof()) throw cRuntimeError("Attempted to read past end of byte buffer");
+                    buffer[size-1-i] = buf[buf_index++];
+                }
+            }
+        }
 
 		template<typename T> T read(T& out) {
 			out = read<T>();

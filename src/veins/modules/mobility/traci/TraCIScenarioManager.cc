@@ -239,6 +239,7 @@ void TraCIScenarioManager::initialize(int stage) {
 		return;
 	}
 
+    traciInitialized = false;
 	trafficLightModuleType = par("trafficLightModuleType").stdstringValue();
 	trafficLightModuleName = par("trafficLightModuleName").stdstringValue();
 	trafficLightModuleDisplayString = par("trafficLightModuleDisplayString").stdstringValue();
@@ -474,6 +475,8 @@ void TraCIScenarioManager::init_traci() {
 		double area = ab * ad;
 		areaSum += area;
 	}
+
+    traciInitialized = true;
 }
 
 void TraCIScenarioManager::finish() {
